@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Deep Think</title>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.0.0/lodash.min.js"></script>
+		<script src="audiosynth.js"></script>
+
+    <script type="text/javascript">
+      var starts = [];
+      var nexts = {};
+
+      function loadQuotes(quotes) {
+        function addNext(word, next) {
+          if (!nexts[word])
+            nexts[word] = [];
+
+          if (!/\w/.exec(word))
+            return;
+
+          nexts[word].push(next);
+        }
+
+        _.each(quotes, function(quote) {
+          var words = quote.split(' ');
+
+          starts.push(words[0]);
+          _.each(words, function(word, i) {
+            if (i === words.length - 1)
+              addNext(word, null);
+
+            addNext(word, words[i + 1]);
+          });
+        });
+
+        goQuote();
+      }
+
+      function goQuote() {
+        var sentence = [];
+
+        function addWord(word) {
+          if (word === null)
+            return;
+
+          sentence.push(word);
+
+          if (!nexts[word])
+            return;
+
+          addWord(_.sample(nexts[word]));
+        }
+
+        addWord(_.sample(starts));
+
+        sentence = _.takeWhile(sentence, function(v, i) {
+          return i < 35;
+        });
+        setTimeout(goQuote, sentence.length * 700 + 2000);
+        speak(sentence.join(' '));
+      }
+
+			function speak(quote) {
+        speechSynthesis.cancel();
+
+				var msg = new SpeechSynthesisUtterance();
+				msg.voice = _.sample(_.filter(speechSynthesis.getVoices(), function(voice) { return _.startsWith(voice.lang, 'en-'); }));
+				msg.text = quote;
+				msg.pitch = _.random(0.5, 1.2, true);
+				msg.rate = _.random(0.6, 0.7, true);
+				speechSynthesis.speak(msg);
+        setTimeout(function() {
+          quoteBucket.innerHTML = quote;
+        }, 1000);
+			}
+			//speak();
+
+			Synth.setVolume(0.15);
+			var piano = Synth.createInstrument('organ');
+			var notes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+			var octaves = [3, 4];
+			function play() {
+				var duration = _.random(1, 4) / 4;
+				setTimeout(play, duration * 1000);
+				piano.play(_.sample(notes), _.sample(octaves), duration);
+			}
+			play();
+		</script>
+
+    <script src="quote_lines.js"></script>
+    <style>
+			.centered {
+				position: fixed;
+				top: 50%;
+				left: 50%;
+				/* bring your own prefixes */
+				transform: translate(-50%, -50%);
+			}
+		</style>
+	</head>
+	<body>
+		<h1 id="quoteBucket">
+			Loading ...
+		</h1>
+	</body>
+</html>
